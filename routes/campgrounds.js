@@ -53,10 +53,16 @@ router.get('/:id', catchAsync(async (req, res) => {
 }))
 
 router.get('/:id/edit', isLoggedIn, catchAsync(async (req, res) => {
-    const campground = await Campground.findById(req.params.id)
+    const {id} = req.params;
+    const campground = await Campground.findById(id)
     if(!campground){
         req.flash('error', 'Cannot Find The Campground')
         res.redirect('/campgrounds')
+    }
+
+    if(!campground.author.equals(req.user._id)){
+        req.flash('error', 'You do not have the persmission to do that')
+        return res.redirect(`/campgrounds/${id}`)
     }
 
     res.render('campgrounds/edit', {campground})
@@ -64,7 +70,12 @@ router.get('/:id/edit', isLoggedIn, catchAsync(async (req, res) => {
 
 router.put('/:id', isLoggedIn, validateCampground, catchAsync(async(req,res) => {
     const {id} = req.params;
-    const campground = await Campground.findByIdAndUpdate(id, {...req.body.campground})
+    const campground = await Campground.findById(id);
+    if(!campground.author.equals(req.user._id)){
+        req.flash('error', 'You do not have the persmission to do that')
+        return res.redirect(`/campgrounds/${id}`)
+    }
+    const camp = await Campground.findByIdAndUpdate(id, {...req.body.campground})
     req.flash('success', 'Successfully Updates Campground')
     res.redirect(`/campgrounds/${campground._id}`)
 }))
